@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { width: 100%; text-align: center; padding: 20px; }
+        .data { font-size: 2em; margin: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sensor Dashboard</h1>
+        <div class="data">
+            <p>Motion: <span id="motion">Loading...</span></p>
+            <p>Distance: <span id="distance">Loading...</span> cm</p>
+            <p>Last Message: <span id="mqtt-message">Loading...</span></p>
+        </div>
+    </div>
+
+    <script>
+        function fetchData() {
+            fetch('/data')
+                .then(response => response.json())
+                .then(data => {
+                    // Update the UI with the latest data
+                    document.getElementById('motion').innerText = data.motion ? 'Detected' : 'No motion';
+                    document.getElementById('distance').innerText = data.distance !== null ? data.distance.toFixed(2) : 'Loading...';
+                    document.getElementById('mqtt-message').innerText = data.mqtt_message || 'Waiting for message...';
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // Fetch the data every 1 second to keep the dashboard updated
+        setInterval(fetchData, 1000);
+        fetchData();  // Initial fetch
+    </script>
+</body>
+</html>
