@@ -49,7 +49,7 @@ def main():
             else:
                 print("Failed to publish message")
 
-            sleep(1)
+            sleep(3)
     except KeyboardInterrupt:
         print("Stopped by user")
     finally:
