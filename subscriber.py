@@ -79,10 +79,11 @@ class FourDigit7SegmentDisplay:
 # ------- Global Display & State --------
 
 display = FourDigit7SegmentDisplay()
-occupancy_led = LED(18)  # Change if 18 is already used
+occupancy_led = LED(27)  # Change if 18 is already used
 last_valid_update = time.time()
 display_lock = threading.Lock()
 update_timeout = 60  # seconds
+
 
 # ------- Display Thread --------
 
@@ -91,6 +92,7 @@ def display_loop():
         with display_lock:
             if time.time() - last_valid_update > update_timeout:
                 display.set_display([0, 0, 0, 0])  # Fallback
+                occupancy_led.off()
         display.refresh()
 
 display_thread = threading.Thread(target=display_loop, daemon=True)
@@ -114,18 +116,19 @@ def on_message(client, userdata, msg):
         confidence = data.get("confidence", "").lower()
         active_sensors_count = int(data.get("active_sensors_count", 0))
 
-        # LED control
         if state == "occupied" and confidence == "high":
             occupancy_led.on()
+            digits = [int(d) for d in f"{active_sensors_count:0>4}"[-4:]]
             with display_lock:
-                last_valid_update = time.time()
+                display.set_display(digits)
         else:
             occupancy_led.off()
+            with display_lock:
+                display.set_display([0, 0, 0, 0])
 
+        last_valid_update = time.time()
         # Update display with sensor count (always 4 digits)
-        digits = [int(d) for d in f"{active_sensors_count:0>4}"[-4:]]
-        with display_lock:
-            display.set_display(digits)
+
 
     except Exception as e:
         print(f"[ERROR] Invalid message: {e}")
