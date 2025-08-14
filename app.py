@@ -12,7 +12,8 @@ TOPICS = [
     "group3/status",
     "group2/sensors/ultrasonic",
     "group2/sensors/pir",
-    "/group1/sensors"
+    "/group1/sensors",
+    "group3/command"
 ]
 
 latest_data = {
@@ -20,6 +21,7 @@ latest_data = {
     "group2_ultrasonic": {"distance": None, "time": None},
     "group2_pir": {"motion": None, "time": None},
     "group1": {"motion":None, "distance": None}
+    "occupancy" : {"occupancy": None, "confidence": None}
 }
 history = []  # store readings as list of dicts
 
@@ -52,7 +54,7 @@ def on_message(client, userdata, msg):
         elif msg.topic == "group2/sensors/pir":
             latest_data["group2_pir"] = {
                 "time": timestamp,
-                "motion": payload.get("motion")
+                "motion": payload.get("motion_detected")
             }
         elif msg.topic == "/group1/sensors":
             latest_data["group1"] = {
@@ -60,6 +62,11 @@ def on_message(client, userdata, msg):
                 "distance": payload.get("distance_cm"),
                 "timestamp": timestamp
             }
+        elif msg.topic == "group3/command":
+            latest_data["occupancy"] = {
+            "occupancy" = payload.get("occupancy_state"),
+            "confidence" = payload.get("confidence")}
+
 
     except json.JSONDecodeError:
         print("Invalid JSON received")
@@ -82,6 +89,7 @@ def index():
 
 @app.route("/data")
 def get_data():
+    print(latest_data["group1"])
     return jsonify(latest_data)
 
 if __name__ == "__main__":
