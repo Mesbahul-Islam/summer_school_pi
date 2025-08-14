@@ -86,10 +86,69 @@
             text-align: center;
             z-index: 10;
         }
+        
+        .occupancy-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            padding: 20px 30px;
+            z-index: 1000;
+            min-width: 200px;
+        }
+        
+        .occupancy-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .occupancy-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .occupancy-occupied {
+            color: #ef4444;
+        }
+        
+        .occupancy-vacant {
+            color: #10b981;
+        }
+        
+        .occupancy-unknown {
+            color: #6b7280;
+        }
+        
+        .confidence-indicator {
+            font-size: 0.9em;
+            color: #6b7280;
+            margin-top: 5px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
     <h1>🚀 Live Sensor Dashboard</h1>
+    
+    <!-- Occupancy Status Display -->
+    <div class="occupancy-status" id="occupancy-status">
+        <div class="occupancy-title">🏠 Room Status</div>
+        <div class="occupancy-indicator" id="occupancy-indicator">
+            <span id="occupancy-text">Unknown</span>
+        </div>
+        <div class="confidence-indicator" id="confidence-indicator">
+            Confidence: --
+        </div>
+    </div>
     
     <div class="chart-grid">
         <div class="chart-container" id="group3-distance-container">
@@ -291,6 +350,40 @@
         });
     }
 
+    function updateOccupancyStatus(occupancyData) {
+        const occupancyText = document.getElementById('occupancy-text');
+        const occupancyIndicator = document.getElementById('occupancy-indicator');
+        const confidenceIndicator = document.getElementById('confidence-indicator');
+        
+        if (!occupancyData || occupancyData.occupancy === null || occupancyData.confidence === null) {
+            occupancyText.textContent = 'Unknown';
+            occupancyIndicator.className = 'occupancy-indicator occupancy-unknown';
+            confidenceIndicator.textContent = 'Confidence: --';
+            return;
+        }
+        
+        const occupancyState = occupancyData.occupancy;
+        const confidence = occupancyData.confidence;
+        
+        // Determine if confidence is high (assuming confidence is a percentage or 0-1 scale)
+        const isHighConfidence = confidence > 0.7 || confidence > 70; // Support both 0-1 and 0-100 scales
+        
+        if (occupancyState === 'occupied' && isHighConfidence) {
+            occupancyText.textContent = '🔴 OCCUPIED';
+            occupancyIndicator.className = 'occupancy-indicator occupancy-occupied';
+        } else if (occupancyState === 'vacant' || occupancyState === 'empty') {
+            occupancyText.textContent = '🟢 VACANT';
+            occupancyIndicator.className = 'occupancy-indicator occupancy-vacant';
+        } else {
+            occupancyText.textContent = '🟡 UNCERTAIN';
+            occupancyIndicator.className = 'occupancy-indicator occupancy-unknown';
+        }
+        
+        // Update confidence display
+        const confidencePercent = confidence > 1 ? confidence : (confidence * 100);
+        confidenceIndicator.textContent = `Confidence: ${confidencePercent.toFixed(1)}%`;
+    }
+
     async function fetchData() {
         try {
             const response = await fetch("/data");
@@ -348,6 +441,11 @@
                 if (data.group1.motion !== undefined) {
                     updateChart(group1motionChart, now, data.group1.motion, 'group1Motion', true);
                 }
+            }
+
+            // Update occupancy status
+            if (data.occupancy) {
+                updateOccupancyStatus(data.occupancy);
             }
 
             // Check for offline sensors

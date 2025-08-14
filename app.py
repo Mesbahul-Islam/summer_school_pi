@@ -20,7 +20,7 @@ latest_data = {
     "group3": {"motion": None, "distance": None, "time": None},
     "group2_ultrasonic": {"distance": None, "time": None},
     "group2_pir": {"motion": None, "time": None},
-    "group1": {"motion":None, "distance": None}
+    "group1": {"motion":None, "distance": None},
     "occupancy" : {"occupancy": None, "confidence": None}
 }
 history = []  # store readings as list of dicts
@@ -64,8 +64,9 @@ def on_message(client, userdata, msg):
             }
         elif msg.topic == "group3/command":
             latest_data["occupancy"] = {
-            "occupancy" = payload.get("occupancy_state"),
-            "confidence" = payload.get("confidence")}
+                "occupancy": payload.get("occupancy_state"),
+                "confidence": payload.get("confidence")
+            }
 
 
     except json.JSONDecodeError:
