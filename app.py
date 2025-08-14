@@ -64,8 +64,8 @@ def on_message(client, userdata, msg):
             }
         elif msg.topic == "group3/command":
             latest_data["occupancy"] = {
-                "occupancy": payload.get("occupancy_state"),
-                "confidence": payload.get("confidence")
+            "occupancy": payload.get("occupancy_state"),
+            "confidence": payload.get("confidence")
             }
 
 
@@ -90,7 +90,6 @@ def index():
 
 @app.route("/data")
 def get_data():
-    print(latest_data["group1"])
     return jsonify(latest_data)
 
 if __name__ == "__main__":
