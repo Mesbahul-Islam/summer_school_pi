@@ -21,22 +21,6 @@ def on_message(client, userdata, msg):
 def on_publish(client, userdata, mid):
     print(f"Message published with ID {mid}")
 
-def append_data_to_json_file(file_path, data):
-    # Create file if it doesn't exist
-    if not os.path.exists(file_path):
-        with open(file_path, 'w') as f:
-            json.dump([], f)
-
-    # Load existing data
-    with open(file_path, 'r') as f:
-        existing_data = json.load(f)
-
-    # Append new data
-    existing_data.append(data)
-
-    # Save updated data
-    with open(file_path, 'w') as f:
-        json.dump(existing_data, f, indent=4)
 
 def main():
     client = mqtt.Client(userdata=None)
@@ -70,9 +54,6 @@ def main():
                 print(f"Success! Sent data: {json_payload}")
             else:
                 print("Failed to publish message")
-
-            # Save to JSON file
-            append_data_to_json_file(LOG_FILE, payload)
 
             sleep(3)
     except KeyboardInterrupt:
