@@ -8,9 +8,19 @@ from paho import mqtt as bla
 
 BROKER = "172.20.10.4"
 PORT = 1883
-TOPIC = "group3/status"
+TOPICS = [
+    "group3/status",
+    "group2/sensors/ultrasonic",
+    "group2/sensors/pir",
+    "/group1/sensors"
+]
 
-latest_data = {"motion": None, "distance": None}
+latest_data = {
+    "group3": {"motion": None, "distance": None, "time": None},
+    "group2_ultrasonic": {"distance": None, "time": None},
+    "group2_pir": {"motion": None, "time": None},
+    "group1": {"motion":None, "distance": None}
+}
 history = []  # store readings as list of dicts
 
 MAX_HISTORY = 100  # keep only last 100 points
@@ -18,24 +28,42 @@ MAX_HISTORY = 100  # keep only last 100 points
 # MQTT Callbacks
 def on_connect(client, userdata, flags, rc, properties=None):
     print(f"Connected with result code {rc}")
-    client.subscribe(TOPIC)
+    for topic in TOPICS:
+        client.subscribe(topic)
 
 def on_message(client, userdata, msg):
-    global latest_data, history
+    global latest_data
+    timestamp = time.strftime("%H:%M:%S")
+
     try:
         payload = json.loads(msg.payload.decode())
-        timestamp = time.strftime("%H:%M:%S")  # format time
-        latest_data = {
-            "time": timestamp,
-            "motion": payload["motion"],
-            "distance": payload["distance"]
-        }
-        history.append(latest_data)
-        if len(history) > MAX_HISTORY:
-            history.pop(0)  # keep list small
-        print(f"Updated dashboard data: {latest_data}")
+
+        if msg.topic == "group3/status":
+            latest_data["group3"] = {
+                "time": timestamp,
+                "motion": payload.get("motion"),
+                "distance": payload.get("distance")
+            }
+        elif msg.topic == "group2/sensors/ultrasonic":
+            latest_data["group2_ultrasonic"] = {
+                "time": timestamp,
+                "distance": payload.get("distance_cm")
+            }
+        elif msg.topic == "group2/sensors/pir":
+            latest_data["group2_pir"] = {
+                "time": timestamp,
+                "motion": payload.get("motion")
+            }
+        elif msg.topic == "/group1/sensors":
+            latest_data["group1"] = {
+                "motion": payload.get("motion_detected"),
+                "distance": payload.get("distance_cm"),
+                "timestamp": timestamp
+            }
+
     except json.JSONDecodeError:
         print("Invalid JSON received")
+
 
 # MQTT Thread Function
 def mqtt_thread():
@@ -54,8 +82,8 @@ def index():
 
 @app.route("/data")
 def get_data():
-    return jsonify(history)
+    return jsonify(latest_data)
 
 if __name__ == "__main__":
     threading.Thread(target=mqtt_thread, daemon=True).start()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5003, debug=True)

@@ -11,45 +11,100 @@
 <body>
     <h1>Live Sensor Dashboard</h1>
 
-    <canvas id="distanceChart"></canvas>
-    <canvas id="motionChart"></canvas>
+    <canvas id="group3distanceChart"></canvas>
+    <canvas id="group3motionChart"></canvas>
+    <canvas id="group2distanceChart"></canvas>
+    <canvas id="group2motionChart"></canvas>
+    <canvas id="group1distanceChart"></canvas>
+    <canvas id="group1motionChart"></canvas>
 
     <script>
-        const distanceCtx = document.getElementById('distanceChart').getContext('2d');
-        const motionCtx = document.getElementById('motionChart').getContext('2d');
+    // Get contexts for all canvases
+    const group3distanceCtx = document.getElementById('group3distanceChart').getContext('2d');
+    const group3motionCtx = document.getElementById('group3motionChart').getContext('2d');
 
-        const distanceChart = new Chart(distanceCtx, {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Distance (cm)', data: [], borderColor: 'blue', fill: false }] },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
-        });
+    const group2distanceCtx = document.getElementById('group2distanceChart').getContext('2d');
+    const group2motionCtx = document.getElementById('group2motionChart').getContext('2d');
 
-        const motionChart = new Chart(motionCtx, {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Motion', data: [], borderColor: 'red', fill: false }] },
-            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-        });
+    const group1distanceCtx = document.getElementById('group1distanceChart').getContext('2d');
+    const group1motionCtx = document.getElementById('group1motionChart').getContext('2d');
 
-        async function fetchData() {
+    // Chart creation helper
+    const createLineChart = (ctx, label, borderColor) => new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label, data: [], borderColor, fill: false }] },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: label.includes('Motion') ? { stepSize: 1, max: 1, min: 0 } : {}
+                }
+            }
+        }
+    });
+
+    const group3distanceChart = createLineChart(group3distanceCtx, 'Group 3 Distance (cm)', 'blue');
+    const group3motionChart = createLineChart(group3motionCtx, 'Group 3 Motion', 'red');
+
+    const group2distanceChart = createLineChart(group2distanceCtx, 'Group 2 Distance (cm)', 'green');
+    const group2motionChart = createLineChart(group2motionCtx, 'Group 2 Motion', 'orange');
+
+    const group1distanceChart = createLineChart(group1distanceCtx, 'Group 1 Distance (cm)', 'purple');
+    const group1motionChart = createLineChart(group1motionCtx, 'Group 1 Motion', 'brown');
+
+    // Maximum number of data points to keep
+    const MAX_DATA_POINTS = 10;
+
+    async function fetchData() {
+        try {
             const response = await fetch("/data");
             const data = await response.json();
 
-            // Extract time, distance, and motion
-            const times = data.map(d => d.time);
-            const distances = data.map(d => d.distance);
-            const motions = data.map(d => d.motion ? 1 : 0); // boolean to 0/1
+            const now = new Date().toLocaleTimeString();
 
-            distanceChart.data.labels = times;
-            distanceChart.data.datasets[0].data = distances;
-            distanceChart.update();
+            function updateChart(chart, time, value, isMotion = false) {
+                // Add new data point
+                chart.data.labels.push(time);
+                chart.data.datasets[0].data.push(isMotion ? (value ? 1 : 0) : value || 0);
+                
+                // Remove oldest data points if we exceed the maximum
+                if (chart.data.labels.length > MAX_DATA_POINTS) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+                
+                chart.update('none'); // Use 'none' for better performance
+            }
 
-            motionChart.data.labels = times;
-            motionChart.data.datasets[0].data = motions;
-            motionChart.update();
+            // Update Group 3 charts
+            if (data.group3) {
+                updateChart(group3distanceChart, data.group3.time || now, data.group3.distance);
+                updateChart(group3motionChart, data.group3.time || now, data.group3.motion, true);
+            }
+
+            // Update Group 2 charts (distance from ultrasonic, motion from pir)
+            if (data.group2_ultrasonic) {
+                updateChart(group2distanceChart, data.group2_ultrasonic.time || now, data.group2_ultrasonic.distance);
+            }
+            if (data.group2_pir) {
+                updateChart(group2motionChart, data.group2_pir.time || now, data.group2_pir.motion, true);
+            }
+
+            // Update Group 1 charts
+            if (data.group1) {
+                updateChart(group1distanceChart, now, data.group1.distance);
+                updateChart(group1motionChart, now, data.group1.motion, true);
+            }
+
+        } catch (err) {
+            console.error("Failed to fetch or update sensor data:", err);
         }
+    }
 
-        setInterval(fetchData, 1000); // refresh every second
-        fetchData();
-    </script>
+    setInterval(fetchData, 1000);
+    fetchData();
+</script>
+
 </body>
 </html>
