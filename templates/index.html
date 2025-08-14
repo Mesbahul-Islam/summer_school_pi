@@ -263,7 +263,7 @@
         if (show && !offlineMsg) {
             offlineMsg = document.createElement('div');
             offlineMsg.className = 'offline-message';
-            offlineMsg.innerHTML = '📡 Device Offline<br><small>No data received</small>';
+            offlineMsg.innerHTML = '📡 Device Offline<br><small>No data or null values received</small>';
             container.style.position = 'relative';
             container.appendChild(offlineMsg);
         } else if (!show && offlineMsg) {
@@ -300,7 +300,13 @@
             const currentTime = Date.now();
 
             function updateChart(chart, time, value, sensorKey, isMotion = false) {
-                // Update last seen time for this sensor
+                // Check if value is null - if so, mark sensor as offline
+                if (value === null) {
+                    lastUpdateTimes[sensorKey] = 0; // Mark as offline
+                    return; // Don't add null data to chart
+                }
+                
+                // Update last seen time for this sensor (only for valid data)
                 lastUpdateTimes[sensorKey] = currentTime;
                 
                 // Add new data point
