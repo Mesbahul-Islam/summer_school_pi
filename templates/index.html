@@ -4,113 +4,247 @@
     <title>Sensor Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #f8f9fa; padding: 20px; }
-        canvas { max-width: 800px; margin: 20px auto; display: block; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 40px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            padding: 20px;
+            max-width: 900px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        canvas { 
+            border-radius: 10px;
+        }
+        
+        .group-title {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #555;
+        }
     </style>
 </head>
 <body>
-    <h1>Live Sensor Dashboard</h1>
-
-    <canvas id="group3distanceChart"></canvas>
-    <canvas id="group3motionChart"></canvas>
-    <canvas id="group2distanceChart"></canvas>
-    <canvas id="group2motionChart"></canvas>
-    <canvas id="group1distanceChart"></canvas>
-    <canvas id="group1motionChart"></canvas>
+    <h1>🚀 Live Sensor Dashboard</h1>
+    
+    <div class="chart-grid">
+        <div class="chart-container">
+            <div class="group-title">Group 3 - Distance Sensor</div>
+            <canvas id="group3distanceChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="group-title">Group 3 - Motion Sensor</div>
+            <canvas id="group3motionChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="group-title">Group 2 - Distance Sensor</div>
+            <canvas id="group2distanceChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="group-title">Group 2 - Motion Sensor</div>
+            <canvas id="group2motionChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="group-title">Group 1 - Distance Sensor</div>
+            <canvas id="group1distanceChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="group-title">Group 1 - Motion Sensor</div>
+            <canvas id="group1motionChart"></canvas>
+        </div>
+    </div>
 
     <script>
-// Chart creation helper with improved options
-const createLineChart = (ctx, label, borderColor, fill = false, stepped = false) => new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [],
-        datasets: [{
-            label,
-            data: [],
-            borderColor,
-            backgroundColor: fill ? borderColor + '33' : 'transparent', // semi-transparent fill
-            fill,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-            stepped: stepped,
-            tension: fill ? 0.3 : 0 // smooth for distance, stepped for motion
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: { display: true, position: 'top' },
-            title: { display: true, text: label },
-            tooltip: { enabled: true, mode: 'index', intersect: false }
+    // Get contexts for all canvases
+    const group3distanceCtx = document.getElementById('group3distanceChart').getContext('2d');
+    const group3motionCtx = document.getElementById('group3motionChart').getContext('2d');
+    const group2distanceCtx = document.getElementById('group2distanceChart').getContext('2d');
+    const group2motionCtx = document.getElementById('group2motionChart').getContext('2d');
+    const group1distanceCtx = document.getElementById('group1distanceChart').getContext('2d');
+    const group1motionCtx = document.getElementById('group1motionChart').getContext('2d');
+
+    // Enhanced chart creation helper
+    const createLineChart = (ctx, label, borderColor, isMotion = false) => new Chart(ctx, {
+        type: 'line',
+        data: { 
+            labels: [], 
+            datasets: [{ 
+                label,
+                data: [],
+                borderColor,
+                backgroundColor: isMotion ? borderColor + '20' : borderColor + '15',
+                fill: true,
+                tension: isMotion ? 0 : 0.4,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: borderColor,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                stepped: isMotion ? 'before' : false,
+                borderWidth: 3
+            }] 
         },
-        scales: {
-            x: {
-                grid: { display: true, color: '#e0e0e0' }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { 
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: { size: 14, weight: 'bold' }
+                    }
+                },
+                tooltip: { 
+                    enabled: true,
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: borderColor,
+                    borderWidth: 2,
+                    cornerRadius: 8,
+                    displayColors: true
+                }
             },
-            y: {
-                beginAtZero: true,
-                grid: { display: true, color: '#e0e0e0' },
-                ticks: label.includes('Motion') ? { stepSize: 1, max: 1, min: 0 } : {}
+            scales: {
+                x: {
+                    grid: { 
+                        display: true, 
+                        color: 'rgba(0,0,0,0.1)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        maxTicksLimit: 8,
+                        font: { size: 12 }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { 
+                        display: true, 
+                        color: 'rgba(0,0,0,0.1)',
+                        drawBorder: false
+                    },
+                    ticks: isMotion ? { 
+                        stepSize: 1, 
+                        max: 1.2, 
+                        min: -0.2,
+                        callback: function(value) {
+                            return value === 1 ? 'Motion' : value === 0 ? 'No Motion' : '';
+                        },
+                        font: { size: 12 }
+                    } : {
+                        font: { size: 12 },
+                        callback: function(value) {
+                            return value + ' cm';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 750,
+                easing: 'easeInOutQuart'
             }
         }
-    }
-});
+    });
 
-// Distance charts: filled, smooth
-const group3distanceChart = createLineChart(group3distanceCtx, 'Group 3 Distance (cm)', 'blue', true);
-const group2distanceChart = createLineChart(group2distanceCtx, 'Group 2 Distance (cm)', 'green', true);
-const group1distanceChart = createLineChart(group1distanceCtx, 'Group 1 Distance (cm)', 'purple', true);
+    // Create charts with enhanced styling
+    const group3distanceChart = createLineChart(group3distanceCtx, 'Distance (cm)', '#3b82f6', false);
+    const group3motionChart = createLineChart(group3motionCtx, 'Motion Status', '#ef4444', true);
 
-// Motion charts: stepped, no fill
-const group3motionChart = createLineChart(group3motionCtx, 'Group 3 Motion', 'red', false, true);
-const group2motionChart = createLineChart(group2motionCtx, 'Group 2 Motion', 'orange', false, true);
-const group1motionChart = createLineChart(group1motionCtx, 'Group 1 Motion', 'brown', false, true);
+    const group2distanceChart = createLineChart(group2distanceCtx, 'Distance (cm)', '#10b981', false);
+    const group2motionChart = createLineChart(group2motionCtx, 'Motion Status', '#f59e0b', true);
 
-const MAX_DATA_POINTS = 10;
+    const group1distanceChart = createLineChart(group1distanceCtx, 'Distance (cm)', '#8b5cf6', false);
+    const group1motionChart = createLineChart(group1motionCtx, 'Motion Status', '#84cc16', true);
 
-async function fetchData() {
-    try {
-        const response = await fetch("/data");
-        const data = await response.json();
+    // Set chart heights
+    document.querySelectorAll('canvas').forEach(canvas => {
+        canvas.style.height = '300px';
+    });
 
-        const now = new Date().toLocaleTimeString();
+    // Maximum number of data points to keep
+    const MAX_DATA_POINTS = 10;
 
-        function updateChart(chart, time, value, isMotion = false) {
-            chart.data.labels.push(time);
-            chart.data.datasets[0].data.push(isMotion ? (value ? 1 : 0) : value || 0);
+    async function fetchData() {
+        try {
+            const response = await fetch("/data");
+            const data = await response.json();
 
-            if (chart.data.labels.length > MAX_DATA_POINTS) {
-                chart.data.labels.shift();
-                chart.data.datasets[0].data.shift();
+            const now = new Date().toLocaleTimeString();
+
+            function updateChart(chart, time, value, isMotion = false) {
+                // Add new data point
+                chart.data.labels.push(time);
+                chart.data.datasets[0].data.push(isMotion ? (value ? 1 : 0) : value || 0);
+                
+                // Remove oldest data points if we exceed the maximum
+                if (chart.data.labels.length > MAX_DATA_POINTS) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+                
+                chart.update('none'); // Use 'none' for better performance
             }
 
-            chart.update('none');
-        }
+            // Update Group 3 charts
+            if (data.group3) {
+                updateChart(group3distanceChart, data.group3.time || now, data.group3.distance);
+                updateChart(group3motionChart, data.group3.time || now, data.group3.motion, true);
+            }
 
-        if (data.group3) {
-            updateChart(group3distanceChart, data.group3.time || now, data.group3.distance);
-            updateChart(group3motionChart, data.group3.time || now, data.group3.motion, true);
-        }
+            // Update Group 2 charts (distance from ultrasonic, motion from pir)
+            if (data.group2_ultrasonic) {
+                updateChart(group2distanceChart, data.group2_ultrasonic.time || now, data.group2_ultrasonic.distance);
+            }
+            if (data.group2_pir) {
+                updateChart(group2motionChart, data.group2_pir.time || now, data.group2_pir.motion, true);
+            }
 
-        if (data.group2_ultrasonic) {
-            updateChart(group2distanceChart, data.group2_ultrasonic.time || now, data.group2_ultrasonic.distance);
-        }
-        if (data.group2_pir) {
-            updateChart(group2motionChart, data.group2_pir.time || now, data.group2_pir.motion, true);
-        }
+            // Update Group 1 charts
+            if (data.group1) {
+                updateChart(group1distanceChart, now, data.group1.distance);
+                updateChart(group1motionChart, now, data.group1.motion, true);
+            }
 
-        if (data.group1) {
-            updateChart(group1distanceChart, now, data.group1.distance);
-            updateChart(group1motionChart, now, data.group1.motion, true);
+        } catch (err) {
+            console.error("Failed to fetch or update sensor data:", err);
         }
-
-    } catch (err) {
-        console.error("Failed to fetch or update sensor data:", err);
     }
-}
 
-setInterval(fetchData, 1000);
-fetchData();
+    setInterval(fetchData, 1000);
+    fetchData();
 </script>
 
 </body>
