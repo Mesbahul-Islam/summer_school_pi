@@ -365,9 +365,9 @@
         const occupancyState = occupancyData.occupancy;
         const confidence = occupancyData.confidence;
         
-        // Determine if confidence is high (assuming confidence is a percentage or 0-1 scale)
-        const isHighConfidence = confidence > 0.7 || confidence > 70; // Support both 0-1 and 0-100 scales
-        
+
+        const isHighConfidence = confidence === 'high';
+
         if (occupancyState === 'occupied' && isHighConfidence) {
             occupancyText.textContent = '🔴 OCCUPIED';
             occupancyIndicator.className = 'occupancy-indicator occupancy-occupied';
