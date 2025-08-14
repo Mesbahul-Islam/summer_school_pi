@@ -28,6 +28,8 @@
             padding: 20px;
             max-width: 900px;
             backdrop-filter: blur(10px);
+            height: 400px; /* Fixed height for container */
+            position: relative; /* For proper positioning */
         }
         
         .chart-grid {
@@ -40,6 +42,8 @@
         
         canvas { 
             border-radius: 10px;
+            width: 100% !important;
+            height: 320px !important; /* Fixed height accounting for title */
         }
         
         .group-title {
@@ -113,7 +117,7 @@
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: false, // This allows the fixed height to work
             plugins: {
                 legend: { 
                     display: true,
@@ -189,10 +193,10 @@
     const group1distanceChart = createLineChart(group1distanceCtx, 'Distance (cm)', '#8b5cf6', false);
     const group1motionChart = createLineChart(group1motionCtx, 'Motion Status', '#84cc16', true);
 
-    // Set chart heights
-    document.querySelectorAll('canvas').forEach(canvas => {
-        canvas.style.height = '300px';
-    });
+    // Remove this section - heights are now set in CSS
+    // document.querySelectorAll('canvas').forEach(canvas => {
+    //     canvas.style.height = '300px';
+    // });
 
     // Maximum number of data points to keep
     const MAX_DATA_POINTS = 10;
