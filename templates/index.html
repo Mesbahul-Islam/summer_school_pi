@@ -53,34 +53,67 @@
             margin-bottom: 15px;
             color: #555;
         }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        
+        .status-online {
+            background-color: #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        }
+        
+        .status-offline {
+            background-color: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+        }
+        
+        .offline-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px dashed #ef4444;
+            font-weight: bold;
+            text-align: center;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
     <h1>🚀 Live Sensor Dashboard</h1>
     
     <div class="chart-grid">
-        <div class="chart-container">
-            <div class="group-title">Group 3 - Distance Sensor</div>
+        <div class="chart-container" id="group3-distance-container">
+            <div class="group-title">Group 3 - Distance Sensor <span class="status-indicator status-offline" id="group3-distance-status"></span></div>
             <canvas id="group3distanceChart"></canvas>
         </div>
-        <div class="chart-container">
-            <div class="group-title">Group 3 - Motion Sensor</div>
+        <div class="chart-container" id="group3-motion-container">
+            <div class="group-title">Group 3 - Motion Sensor <span class="status-indicator status-offline" id="group3-motion-status"></span></div>
             <canvas id="group3motionChart"></canvas>
         </div>
-        <div class="chart-container">
-            <div class="group-title">Group 2 - Distance Sensor</div>
+        <div class="chart-container" id="group2-distance-container">
+            <div class="group-title">Group 2 - Distance Sensor <span class="status-indicator status-offline" id="group2-distance-status"></span></div>
             <canvas id="group2distanceChart"></canvas>
         </div>
-        <div class="chart-container">
-            <div class="group-title">Group 2 - Motion Sensor</div>
+        <div class="chart-container" id="group2-motion-container">
+            <div class="group-title">Group 2 - Motion Sensor <span class="status-indicator status-offline" id="group2-motion-status"></span></div>
             <canvas id="group2motionChart"></canvas>
         </div>
-        <div class="chart-container">
-            <div class="group-title">Group 1 - Distance Sensor</div>
+        <div class="chart-container" id="group1-distance-container">
+            <div class="group-title">Group 1 - Distance Sensor <span class="status-indicator status-offline" id="group1-distance-status"></span></div>
             <canvas id="group1distanceChart"></canvas>
         </div>
-        <div class="chart-container">
-            <div class="group-title">Group 1 - Motion Sensor</div>
+        <div class="chart-container" id="group1-motion-container">
+            <div class="group-title">Group 1 - Motion Sensor <span class="status-indicator status-offline" id="group1-motion-status"></span></div>
             <canvas id="group1motionChart"></canvas>
         </div>
     </div>
@@ -201,14 +234,75 @@
     // Maximum number of data points to keep
     const MAX_DATA_POINTS = 10;
 
+    // Track last update times for offline detection
+    const lastUpdateTimes = {
+        group3Distance: 0,
+        group3Motion: 0,
+        group2Distance: 0,
+        group2Motion: 0,
+        group1Distance: 0,
+        group1Motion: 0
+    };
+
+    // Offline threshold in milliseconds (5 seconds)
+    const OFFLINE_THRESHOLD = 5000;
+
+    function updateStatusIndicator(sensorId, isOnline) {
+        const statusElement = document.getElementById(sensorId + '-status');
+        if (statusElement) {
+            statusElement.className = `status-indicator ${isOnline ? 'status-online' : 'status-offline'}`;
+        }
+    }
+
+    function showOfflineMessage(containerId, show) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        let offlineMsg = container.querySelector('.offline-message');
+        
+        if (show && !offlineMsg) {
+            offlineMsg = document.createElement('div');
+            offlineMsg.className = 'offline-message';
+            offlineMsg.innerHTML = '📡 Device Offline<br><small>No data received</small>';
+            container.style.position = 'relative';
+            container.appendChild(offlineMsg);
+        } else if (!show && offlineMsg) {
+            offlineMsg.remove();
+        }
+    }
+
+    function checkOfflineStatus() {
+        const now = Date.now();
+        
+        // Check each sensor
+        const sensors = [
+            { key: 'group3Distance', statusId: 'group3-distance', containerId: 'group3-distance-container' },
+            { key: 'group3Motion', statusId: 'group3-motion', containerId: 'group3-motion-container' },
+            { key: 'group2Distance', statusId: 'group2-distance', containerId: 'group2-distance-container' },
+            { key: 'group2Motion', statusId: 'group2-motion', containerId: 'group2-motion-container' },
+            { key: 'group1Distance', statusId: 'group1-distance', containerId: 'group1-distance-container' },
+            { key: 'group1Motion', statusId: 'group1-motion', containerId: 'group1-motion-container' }
+        ];
+
+        sensors.forEach(sensor => {
+            const isOnline = lastUpdateTimes[sensor.key] > 0 && (now - lastUpdateTimes[sensor.key]) < OFFLINE_THRESHOLD;
+            updateStatusIndicator(sensor.statusId, isOnline);
+            showOfflineMessage(sensor.containerId, !isOnline);
+        });
+    }
+
     async function fetchData() {
         try {
             const response = await fetch("/data");
             const data = await response.json();
 
             const now = new Date().toLocaleTimeString();
+            const currentTime = Date.now();
 
-            function updateChart(chart, time, value, isMotion = false) {
+            function updateChart(chart, time, value, sensorKey, isMotion = false) {
+                // Update last seen time for this sensor
+                lastUpdateTimes[sensorKey] = currentTime;
+                
                 // Add new data point
                 chart.data.labels.push(time);
                 chart.data.datasets[0].data.push(isMotion ? (value ? 1 : 0) : value || 0);
@@ -224,30 +318,47 @@
 
             // Update Group 3 charts
             if (data.group3) {
-                updateChart(group3distanceChart, data.group3.time || now, data.group3.distance);
-                updateChart(group3motionChart, data.group3.time || now, data.group3.motion, true);
+                if (data.group3.distance !== undefined) {
+                    updateChart(group3distanceChart, data.group3.time || now, data.group3.distance, 'group3Distance');
+                }
+                if (data.group3.motion !== undefined) {
+                    updateChart(group3motionChart, data.group3.time || now, data.group3.motion, 'group3Motion', true);
+                }
             }
 
             // Update Group 2 charts (distance from ultrasonic, motion from pir)
-            if (data.group2_ultrasonic) {
-                updateChart(group2distanceChart, data.group2_ultrasonic.time || now, data.group2_ultrasonic.distance);
+            if (data.group2_ultrasonic && data.group2_ultrasonic.distance !== undefined) {
+                updateChart(group2distanceChart, data.group2_ultrasonic.time || now, data.group2_ultrasonic.distance, 'group2Distance');
             }
-            if (data.group2_pir) {
-                updateChart(group2motionChart, data.group2_pir.time || now, data.group2_pir.motion, true);
+            if (data.group2_pir && data.group2_pir.motion !== undefined) {
+                updateChart(group2motionChart, data.group2_pir.time || now, data.group2_pir.motion, 'group2Motion', true);
             }
 
             // Update Group 1 charts
             if (data.group1) {
-                updateChart(group1distanceChart, now, data.group1.distance);
-                updateChart(group1motionChart, now, data.group1.motion, true);
+                if (data.group1.distance !== undefined) {
+                    updateChart(group1distanceChart, now, data.group1.distance, 'group1Distance');
+                }
+                if (data.group1.motion !== undefined) {
+                    updateChart(group1motionChart, now, data.group1.motion, 'group1Motion', true);
+                }
             }
+
+            // Check for offline sensors
+            checkOfflineStatus();
 
         } catch (err) {
             console.error("Failed to fetch or update sensor data:", err);
+            // On fetch error, mark all sensors as potentially offline after threshold
+            setTimeout(checkOfflineStatus, 1000);
         }
     }
 
     setInterval(fetchData, 1000);
+    
+    // Check offline status every 2 seconds
+    setInterval(checkOfflineStatus, 2000);
+    
     fetchData();
 </script>
 
