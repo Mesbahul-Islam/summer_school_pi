@@ -78,5 +78,21 @@
     {
         "motion": 0,
         "distance": 100.0
+    },
+    {
+        "motion": 0,
+        "distance": 100.0
+    },
+    {
+        "motion": 0,
+        "distance": 100.0
+    },
+    {
+        "motion": 1,
+        "distance": 100.0
+    },
+    {
+        "motion": 1,
+        "distance": 100.0
     }
 ]
